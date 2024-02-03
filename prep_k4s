@@ -1,0 +1,74 @@
+#!/bin/bash
+source /etc/os-release
+
+if [[ ! ${NAME} == "Arch Linux" ]]; then
+  sudo pacman -Syu kubelet kubeadm iptables-nft containerd
+else
+  echo 'Only Arch Linux is supported at this point.'
+  if [[ -z ${SKIP_OS_CHECK} ]]; then
+    printf 'to bypass this check:\nexport SKIP_OS_CHECK=1'
+    exit 1
+  fi
+fi
+
+check_if_line_exists()
+{
+  grep -qsFx "${LINE_TO_ADD}" "${TARGET_FILE}"
+}
+
+add_line_to()
+{
+  [ -w "${TARGET_FILE}" ] || TARGET_FILE=${LINE_TO_ADD}
+  printf "%s\n" "${LINE_TO_ADD}" >> "${TARGET_FILE}"
+}
+
+adder () {
+  TARGET_FILE=$1
+  LINE_TO_ADD=$2
+  check_if_line_exists || add_line_to
+}
+
+main () {
+  adder /etc/modules-load.d/k8s.conf overlay
+  adder /etc/modules-load.d/k8s.conf br_netfilter
+  adder /etc/sysctl.d/k8s.conf 'net.bridge.bridge-nf-call-iptables  = 1'
+  adder /etc/sysctl.d/k8s.conf 'net.bridge.bridge-nf-call-ip6tables = 1'
+  adder /etc/sysctl.d/k8s.conf 'net.ipv4.ip_forward                 = 1'
+
+  sysctl --system
+  #(Optionally) verify that the br_netfilter, overlay modules are loaded by running the following commands:
+  lsmod | grep br_netfilter
+  lsmod | grep overlay
+  #(Optionally) verify that the net.bridge.bridge-nf-call-iptables, net.bridge.bridge-nf-call-ip6tables, and net.ipv4.ip_forward system variables are set to 1 in your sysctl config by running the following command:
+  sysctl net.bridge.bridge-nf-call-iptables net.bridge.bridge-nf-call-ip6tables net.ipv4.ip_forward
+  which containerd-rootless-setuptool.sh
+  if [[ $? == 0 ]];
+    containerd-rootless-setuptool.sh install
+  else
+    printf "please install nerdctl-full-bin from the AUR and re-run this script"
+    exit 1
+  fi
+  sudo systemctl enable --now containerd
+
+  sudo swapoff -a
+  sudo sed -i '/ swap / s/^/#/' /etc/fstab
+  #If you see /dev/zram0 you should also remove the zram kernel module by:
+  swapoff /dev/zram0
+  modprobe -r zram
+  #If your zram is managed by systemd, try finding the .swap unit:
+
+  systemctl --type swap
+  printf 'If found, you can mask it:'
+  printf 'sudo systemctl mask "dev-XYZ.swap'
+
+  if [[ ! -f /etc/containerd/config.toml ]]; then
+    containerd config default|sed 's/SystemdCgroup = false/SystemdCgroup = true/' > /etc/containerd/config.toml
+  else
+    printf 'It looks like you already have /etc/containerd/config.toml, I will leave it alonve for now'
+  fi
+
+  printf 'This is a good time to reboot'
+}
+
+main
+exit 0
