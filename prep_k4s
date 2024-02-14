@@ -42,7 +42,7 @@ main () {
   #(Optionally) verify that the net.bridge.bridge-nf-call-iptables, net.bridge.bridge-nf-call-ip6tables, and net.ipv4.ip_forward system variables are set to 1 in your sysctl config by running the following command:
   sysctl net.bridge.bridge-nf-call-iptables net.bridge.bridge-nf-call-ip6tables net.ipv4.ip_forward
   which containerd-rootless-setuptool.sh
-  if [[ $? == 0 ]];
+  if [[ $? == 0 ]]; then
     containerd-rootless-setuptool.sh install
   else
     printf "please install nerdctl-full-bin from the AUR and re-run this script"
