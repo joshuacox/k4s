@@ -1,7 +1,7 @@
 #!/bin/bash
 source /etc/os-release
 
-if [[ ! ${NAME} == "Arch Linux" ]]; then
+if [[ ${NAME} == "Arch Linux" ]]; then
   sudo pacman -Syu kubelet kubeadm iptables-nft containerd
 else
   echo 'Only Arch Linux is supported at this point.'
