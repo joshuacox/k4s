@@ -61,6 +61,7 @@ main () {
   printf 'If found, you can mask it:'
   printf 'sudo systemctl mask "dev-XYZ.swap'
 
+  mkdir -p /etc/containerd
   if [[ ! -f /etc/containerd/config.toml ]]; then
     containerd config default|sed 's/SystemdCgroup = false/SystemdCgroup = true/' > /etc/containerd/config.toml
   else
