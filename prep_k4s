@@ -46,6 +46,7 @@ main () {
   lsmod | grep overlay
   #(Optionally) verify that the net.bridge.bridge-nf-call-iptables, net.bridge.bridge-nf-call-ip6tables, and net.ipv4.ip_forward system variables are set to 1 in your sysctl config by running the following command:
   sudo sysctl net.bridge.bridge-nf-call-iptables net.bridge.bridge-nf-call-ip6tables net.ipv4.ip_forward
+  set +e
   which containerd-rootless-setuptool.sh
   if [[ $? == 0 ]]; then
     containerd-rootless-setuptool.sh install
@@ -53,6 +54,7 @@ main () {
     printf "please install nerdctl-full-bin from the AUR and re-run this script\n"
     exit 1
   fi
+  set -e
   sudo systemctl enable --now containerd
 
   sudo swapoff -a
