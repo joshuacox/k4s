@@ -60,8 +60,10 @@ main () {
   sudo swapoff -a
   sudo sed -i '/ swap / s/^/#/' /etc/fstab
   #If you see /dev/zram0 you should also remove the zram kernel module by:
+  set +e
   sudo swapoff /dev/zram0
   sudo modprobe -r zram
+  set -e
   #If your zram is managed by systemd, try finding the .swap unit:
 
   sudo systemctl --type swap
