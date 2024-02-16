@@ -1,9 +1,10 @@
 #!/bin/bash
 source /etc/os-release
-set -x
+set -eux
 
 if [[ ${NAME} == "Arch Linux" ]]; then
-  sudo pacman -Syu --noconfirm kubelet kubeadm iptables-nft containerd
+  sudo pacman -Syu iptables-nft
+  sudo pacman -Syu kubectl kubelet kubeadm containerd ebtables socat ethtool conntrack-tools
 else
   echo 'Only Arch Linux is supported at this point.'
   if [[ -z ${SKIP_OS_CHECK} ]]; then
@@ -65,7 +66,7 @@ main () {
   printf 'If any swap found, you can mask it:\n'
   printf 'sudo systemctl mask "dev-XYZ.swap"\n'
 
-  mkdir -p /etc/containerd
+  sudo mkdir -p /etc/containerd
   if [[ ! -f /etc/containerd/config.toml ]]; then
     containerd config default|sed 's/SystemdCgroup = false/SystemdCgroup = true/' | sudo tee /etc/containerd/config.toml > /dev/null
   else
