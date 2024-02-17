@@ -3,8 +3,9 @@ source /etc/os-release
 set -eux
 
 if [[ ${NAME} == "Arch Linux" ]]; then
-  sudo pacman -Syu iptables-nft
-  sudo pacman -Syu kubectl kubelet kubeadm containerd ebtables socat ethtool conntrack-tools
+  sudo pacman -Sy archlinux-keyring
+  sudo pacman -Su iptables-nft
+  sudo pacman -S kubectl kubelet kubeadm containerd ebtables socat ethtool conntrack-tools debugedit
 else
   echo 'Only Arch Linux is supported at this point.'
   if [[ -z ${SKIP_OS_CHECK} ]]; then
@@ -31,6 +32,24 @@ adder () {
   check_if_line_exists || add_line_to
 }
 
+bauerbill_installer () {
+  TARGET=$1
+  TMP=$(mktemp -d)
+  cd $TMP
+  bauerbill -S --aur $TARGET
+  cd build
+  if [[ -f ./download.sh ]]; then 
+    yes M | ./download.sh
+  fi
+  if [[ -f ./build.sh ]]; then 
+    yes y | ./build.sh
+  fi
+  if [[ -f ./clean.sh ]]; then 
+    ./clean.sh
+  fi
+  rm -Rf $TMP
+}
+
 main () {
   adder /etc/modules-load.d/k8s.conf overlay
   adder /etc/modules-load.d/k8s.conf br_netfilter
@@ -51,8 +70,13 @@ main () {
   if [[ $? == 0 ]]; then
     containerd-rootless-setuptool.sh install
   else
-    printf "please install nerdctl-full-bin from the AUR and re-run this script\n"
-    exit 1
+    command -v bauerbill
+    if [[ $? -eq 0 ]]; then
+      bauerbill_installer nerdctl-full-bin
+    else
+      printf "please install nerdctl-full-bin from the AUR and re-run this script\n"
+      exit 1
+    fi
   fi
   set -e
   sudo systemctl enable --now containerd
