@@ -1,4 +1,5 @@
 #!/bin/bash
+set -x
 
 sudo kubeadm init --cri-socket unix:/run/containerd/containerd.sock --pod-network-cidr=192.168.0.0/16
 mkdir -p $HOME/.kube
